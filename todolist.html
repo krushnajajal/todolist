@@ -1,0 +1,1315 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate React To-Do List App</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --card-bg: #ffffff;
+            --border-color: #e0e0e0;
+            --shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1a2e;
+            --text-color: #ffffff;
+            --card-bg: #16213e;
+            --border-color: #2a2a3e;
+            --shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            transition: all 0.3s ease;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            min-height: 100vh;
+        }
+
+        .main-panel {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+            50% { transform: translate(-50%, -50%) rotate(180deg); }
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 2;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.3);
+            transform: rotate(180deg);
+        }
+
+        .task-input-container {
+            padding: 30px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .task-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+            background: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .task-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .priority-select, .category-select, .due-date {
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            cursor: pointer;
+            outline: none;
+        }
+
+        .voice-btn, .add-btn {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .voice-btn:hover, .add-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .voice-btn.listening {
+            background: var(--secondary-gradient);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .filter-tabs {
+            display: flex;
+            background: var(--bg-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .filter-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            color: var(--text-color);
+            position: relative;
+        }
+
+        .filter-tab.active {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .filter-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: white;
+        }
+
+        .tasks-container {
+            padding: 20px 30px 30px;
+            min-height: 400px;
+        }
+
+        .search-bar {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 45px 12px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            outline: none;
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+
+        .task-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            padding: 15px;
+            background: var(--primary-gradient);
+            color: white;
+            border-radius: 10px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:nth-child(2) { background: var(--success-gradient); }
+        .stat-card:nth-child(3) { background: var(--warning-gradient); }
+        .stat-card:nth-child(4) { background: var(--secondary-gradient); }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
+        .task-list {
+            list-style: none;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: var(--bg-color);
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            border-left: 6px solid transparent;
+            cursor: grab;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .task-item:hover {
+            transform: translateX(10px);
+            box-shadow: var(--shadow);
+        }
+
+        .task-item.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+
+        .task-item.completed {
+            opacity: 0.7;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+        }
+
+        .priority-high { border-left-color: #ff4757; }
+        .priority-medium { border-left-color: #ffa726; }
+        .priority-low { border-left-color: #66bb6a; }
+
+        .category-work { background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(102, 126, 234, 0.05)); }
+        .category-personal { background: linear-gradient(135deg, rgba(240, 147, 251, 0.1), rgba(240, 147, 251, 0.05)); }
+        .category-health { background: linear-gradient(135deg, rgba(79, 172, 254, 0.1), rgba(79, 172, 254, 0.05)); }
+        .category-shopping { background: linear-gradient(135deg, rgba(250, 112, 154, 0.1), rgba(250, 112, 154, 0.05)); }
+
+        .task-checkbox {
+            margin-right: 15px;
+            width: 24px;
+            height: 24px;
+            accent-color: #667eea;
+            cursor: pointer;
+        }
+
+        .task-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .task-text {
+            font-size: 1.1rem;
+            color: var(--text-color);
+            margin-bottom: 5px;
+        }
+
+        .task-meta {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .priority-badge, .category-badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .priority-badge.high { background: #ff4757; color: white; }
+        .priority-badge.medium { background: #ffa726; color: white; }
+        .priority-badge.low { background: #66bb6a; color: white; }
+
+        .category-badge.work { background: #667eea; color: white; }
+        .category-badge.personal { background: #f093fb; color: white; }
+        .category-badge.health { background: #4facfe; color: white; }
+        .category-badge.shopping { background: #fa709a; color: white; }
+
+        .due-date-badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .due-date-badge.overdue {
+            background: #ff4757;
+            color: white;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.5; }
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .task-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .edit-btn {
+            color: #667eea;
+        }
+
+        .edit-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .delete-btn {
+            color: #dc3545;
+        }
+
+        .delete-btn:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+        .sidebar-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .achievement-card h3, .quote-card h3, .analytics-card h3 {
+            margin-bottom: 15px;
+            color: var(--text-color);
+            font-size: 1.2rem;
+        }
+
+        .achievement-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .achievement {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .achievement.unlocked {
+            background: var(--success-gradient);
+            color: white;
+            transform: scale(1.02);
+        }
+
+        .achievement.locked {
+            background: var(--bg-color);
+            opacity: 0.5;
+        }
+
+        .achievement-icon {
+            font-size: 1.5rem;
+        }
+
+        .achievement-text {
+            font-size: 0.9rem;
+        }
+
+        .quote-text {
+            font-style: italic;
+            color: var(--text-color);
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .quote-author {
+            text-align: right;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        .analytics-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .chart-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .bar-label {
+            width: 80px;
+            font-size: 0.8rem;
+        }
+
+        .bar-fill {
+            flex: 1;
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .bar-progress {
+            height: 100%;
+            background: var(--primary-gradient);
+            transition: width 0.5s ease;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .floating-add {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--secondary-gradient);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(240, 147, 251, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .floating-add:hover {
+            transform: scale(1.1) rotate(90deg);
+        }
+
+        @media (max-width: 1024px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto;
+                gap: 20px;
+            }
+            
+            .sidebar {
+                order: 2;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                flex-direction: row;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 10px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .input-controls {
+                justify-content: stretch;
+            }
+            
+            .task-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .sidebar {
+                flex-direction: column;
+            }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: var(--success-gradient);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1001;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .sound-control {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 2;
+        }
+
+        .sound-control:hover {
+            background: rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Motivational quotes
+        const quotes = [
+            { text: "The way to get started is to quit talking and begin doing.", author: "Walt Disney" },
+            { text: "Innovation distinguishes between a leader and a follower.", author: "Steve Jobs" },
+            { text: "Life is what happens to you while you're busy making other plans.", author: "John Lennon" },
+            { text: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" },
+            { text: "It is during our darkest moments that we must focus to see the light.", author: "Aristotle" },
+            { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" }
+        ];
+
+        // Achievement system
+        const achievements = [
+            { id: 'first_task', icon: '🎯', text: 'Added your first task!', condition: (tasks) => tasks.length >= 1 },
+            { id: 'task_master', icon: '🏆', text: 'Created 10 tasks!', condition: (tasks) => tasks.length >= 10 },
+            { id: 'completionist', icon: '✅', text: 'Completed 5 tasks!', condition: (tasks) => tasks.filter(t => t.completed).length >= 5 },
+            { id: 'organizer', icon: '📝', text: 'Used all categories!', condition: (tasks) => {
+                const categories = [...new Set(tasks.map(t => t.category))];
+                return categories.length >= 4;
+            }},
+            { id: 'priority_pro', icon: '⚡', text: 'Set task priorities!', condition: (tasks) => tasks.some(t => t.priority !== 'medium') },
+            { id: 'deadline_keeper', icon: '⏰', text: 'Set due dates!', condition: (tasks) => tasks.some(t => t.dueDate) }
+        ];
+
+        // Sound effects
+        const playSound = (type, soundEnabled) => {
+            if (!soundEnabled) return;
+            
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            let frequency;
+            
+            switch(type) {
+                case 'add': frequency = 800; break;
+                case 'complete': frequency = 1000; break;
+                case 'delete': frequency = 400; break;
+                default: frequency = 600;
+            }
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        };
+
+        // Notification Component
+        const Notification = ({ message, show, onHide }) => {
+            useEffect(() => {
+                if (show) {
+                    const timer = setTimeout(onHide, 3000);
+                    return () => clearTimeout(timer);
+                }
+            }, [show, onHide]);
+
+            return (
+                <div className={`notification ${show ? 'show' : ''}`}>
+                    {message}
+                </div>
+            );
+        };
+
+        // Achievement Component
+        const AchievementCard = ({ tasks, unlockedAchievements, onUnlock }) => {
+            useEffect(() => {
+                achievements.forEach(achievement => {
+                    if (!unlockedAchievements.includes(achievement.id) && achievement.condition(tasks)) {
+                        onUnlock(achievement.id);
+                    }
+                });
+            }, [tasks, unlockedAchievements, onUnlock]);
+
+            return (
+                <div className="sidebar-card achievement-card">
+                    <h3><i className="fas fa-trophy"></i> Achievements</h3>
+                    <div className="achievement-list">
+                        {achievements.map(achievement => (
+                            <div 
+                                key={achievement.id}
+                                className={`achievement ${unlockedAchievements.includes(achievement.id) ? 'unlocked' : 'locked'}`}
+                            >
+                                <span className="achievement-icon">{achievement.icon}</span>
+                                <span className="achievement-text">{achievement.text}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // Quote Component
+        const QuoteCard = () => {
+            const [currentQuote, setCurrentQuote] = useState(quotes[0]);
+
+            useEffect(() => {
+                const today = new Date().toDateString();
+                const savedQuote = localStorage.getItem('daily-quote');
+                const savedDate = localStorage.getItem('quote-date');
+
+                if (savedQuote && savedDate === today) {
+                    setCurrentQuote(JSON.parse(savedQuote));
+                } else {
+                    const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+                    setCurrentQuote(randomQuote);
+                    localStorage.setItem('daily-quote', JSON.stringify(randomQuote));
+                    localStorage.setItem('quote-date', today);
+                }
+            }, []);
+
+            return (
+                <div className="sidebar-card quote-card">
+                    <h3><i className="fas fa-quote-left"></i> Daily Inspiration</h3>
+                    <div className="quote-text">"{currentQuote.text}"</div>
+                    <div className="quote-author">— {currentQuote.author}</div>
+                </div>
+            );
+        };
+
+        // Analytics Component
+        const AnalyticsCard = ({ tasks }) => {
+            const totalTasks = tasks.length;
+            const completedTasks = tasks.filter(t => t.completed).length;
+            const highPriorityTasks = tasks.filter(t => t.priority === 'high').length;
+            const overdueTasks = tasks.filter(t => {
+                if (!t.dueDate) return false;
+                return new Date(t.dueDate) < new Date() && !t.completed;
+            }).length;
+
+            const completionRate = totalTasks ? (completedTasks / totalTasks) * 100 : 0;
+            const priorityRate = totalTasks ? (highPriorityTasks / totalTasks) * 100 : 0;
+            const overdueRate = totalTasks ? (overdueTasks / totalTasks) * 100 : 0;
+
+            return (
+                <div className="sidebar-card analytics-card">
+                    <h3><i className="fas fa-chart-bar"></i> Analytics</h3>
+                    <div className="analytics-chart">
+                        <div className="chart-bar">
+                            <span className="bar-label">Completed</span>
+                            <div className="bar-fill">
+                                <div className="bar-progress" style={{width: `${completionRate}%`}}></div>
+                            </div>
+                            <span>{Math.round(completionRate)}%</span>
+                        </div>
+                        <div className="chart-bar">
+                            <span className="bar-label">High Priority</span>
+                            <div className="bar-fill">
+                                <div className="bar-progress" style={{width: `${priorityRate}%`}}></div>
+                            </div>
+                            <span>{Math.round(priorityRate)}%</span>
+                        </div>
+                        <div className="chart-bar">
+                            <span className="bar-label">Overdue</span>
+                            <div className="bar-fill">
+                                <div className="bar-progress" style={{width: `${overdueRate}%`, background: 'var(--secondary-gradient)'}}></div>
+                            </div>
+                            <span>{Math.round(overdueRate)}%</span>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Task Item Component
+        const TaskItem = ({ task, onToggle, onDelete, onEdit, onDragStart, onDragEnd }) => {
+            const [isEditing, setIsEditing] = useState(false);
+            const [editText, setEditText] = useState(task.text);
+
+            const handleSave = () => {
+                if (editText.trim()) {
+                    onEdit(task.id, editText.trim());
+                    setIsEditing(false);
+                }
+            };
+
+            const handleCancel = () => {
+                setEditText(task.text);
+                setIsEditing(false);
+            };
+
+            const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !task.completed;
+
+            const getPriorityClass = () => `priority-${task.priority}`;
+            const getCategoryClass = () => `category-${task.category}`;
+
+            return (
+                <li 
+                    className={`task-item ${task.completed ? 'completed' : ''} ${getPriorityClass()} ${getCategoryClass()}`}
+                    draggable={!isEditing}
+                    onDragStart={() => onDragStart(task.id)}
+                    onDragEnd={onDragEnd}
+                >
+                    <input
+                        type="checkbox"
+                        className="task-checkbox"
+                        checked={task.completed}
+                        onChange={() => onToggle(task.id)}
+                    />
+                    
+                    {isEditing ? (
+                        <div className="task-content">
+                            <input
+                                type="text"
+                                className="edit-input"
+                                value={editText}
+                                onChange={(e) => setEditText(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSave()}
+                                autoFocus
+                            />
+                            <div className="task-actions">
+                                <button className="task-btn save-btn" onClick={handleSave}>
+                                    <i className="fas fa-check"></i>
+                                </button>
+                                <button className="task-btn cancel-btn" onClick={handleCancel}>
+                                    <i className="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="task-content">
+                                <div className="task-text">{task.text}</div>
+                                <div className="task-meta">
+                                    <span className={`priority-badge ${task.priority}`}>
+                                        {task.priority.toUpperCase()}
+                                    </span>
+                                    <span className={`category-badge ${task.category}`}>
+                                        {task.category.toUpperCase()}
+                                    </span>
+                                    {task.dueDate && (
+                                        <span className={`due-date-badge ${isOverdue ? 'overdue' : ''}`}>
+                                            <i className="fas fa-calendar"></i> {new Date(task.dueDate).toLocaleDateString()}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="task-actions">
+                                <button 
+                                    className="task-btn edit-btn" 
+                                    onClick={() => setIsEditing(true)}
+                                    title="Edit task"
+                                >
+                                    <i className="fas fa-edit"></i>
+                                </button>
+                                <button 
+                                    className="task-btn delete-btn" 
+                                    onClick={() => onDelete(task.id)}
+                                    title="Delete task"
+                                >
+                                    <i className="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </li>
+            );
+        };
+
+        // Main App Component
+        const TodoApp = () => {
+            const [tasks, setTasks] = useState([]);
+            const [inputValue, setInputValue] = useState('');
+            const [filter, setFilter] = useState('all');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [priority, setPriority] = useState('medium');
+            const [category, setCategory] = useState('personal');
+            const [dueDate, setDueDate] = useState('');
+            const [theme, setTheme] = useState('light');
+            const [isListening, setIsListening] = useState(false);
+            const [notification, setNotification] = useState({ show: false, message: '' });
+            const [unlockedAchievements, setUnlockedAchievements] = useState([]);
+            const [draggedTask, setDraggedTask] = useState(null);
+            const [soundEnabled, setSoundEnabled] = useState(true);
+            
+            const recognitionRef = useRef(null);
+
+            // Load data from localStorage
+            useEffect(() => {
+                const savedTasks = localStorage.getItem('ultimate-todo-tasks');
+                const savedTheme = localStorage.getItem('todo-theme');
+                const savedAchievements = localStorage.getItem('todo-achievements');
+                const savedSound = localStorage.getItem('sound-enabled');
+
+                if (savedTasks) setTasks(JSON.parse(savedTasks));
+                if (savedTheme) setTheme(savedTheme);
+                if (savedAchievements) setUnlockedAchievements(JSON.parse(savedAchievements));
+                if (savedSound !== null) setSoundEnabled(JSON.parse(savedSound));
+            }, []);
+
+            // Save data to localStorage
+            useEffect(() => {
+                localStorage.setItem('ultimate-todo-tasks', JSON.stringify(tasks));
+            }, [tasks]);
+
+            useEffect(() => {
+                localStorage.setItem('todo-theme', theme);
+                document.documentElement.setAttribute('data-theme', theme);
+            }, [theme]);
+
+            useEffect(() => {
+                localStorage.setItem('todo-achievements', JSON.stringify(unlockedAchievements));
+            }, [unlockedAchievements]);
+
+            useEffect(() => {
+                localStorage.setItem('sound-enabled', JSON.stringify(soundEnabled));
+            }, [soundEnabled]);
+
+            // Voice recognition setup
+            useEffect(() => {
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    recognitionRef.current = new SpeechRecognition();
+                    recognitionRef.current.continuous = false;
+                    recognitionRef.current.interimResults = false;
+                    recognitionRef.current.lang = 'en-US';
+
+                    recognitionRef.current.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        setInputValue(transcript);
+                        setIsListening(false);
+                    };
+
+                    recognitionRef.current.onerror = () => {
+                        setIsListening(false);
+                    };
+
+                    recognitionRef.current.onend = () => {
+                        setIsListening(false);
+                    };
+                }
+            }, []);
+
+            const showNotification = (message) => {
+                setNotification({ show: true, message });
+            };
+
+            const hideNotification = () => {
+                setNotification({ show: false, message: '' });
+            };
+
+            const addTask = () => {
+                if (inputValue.trim()) {
+                    const newTask = {
+                        id: Date.now(),
+                        text: inputValue.trim(),
+                        completed: false,
+                        priority,
+                        category,
+                        dueDate,
+                        createdAt: new Date().toISOString()
+                    };
+                    setTasks([...tasks, newTask]);
+                    setInputValue('');
+                    setDueDate('');
+                    playSound('add', soundEnabled);
+                    showNotification('Task added successfully!');
+                }
+            };
+
+            const toggleTask = (id) => {
+                setTasks(tasks.map(task => {
+                    if (task.id === id) {
+                        const updated = { ...task, completed: !task.completed };
+                        if (updated.completed) {
+                            playSound('complete', soundEnabled);
+                            showNotification('Great job! Task completed!');
+                        }
+                        return updated;
+                    }
+                    return task;
+                }));
+            };
+
+            const deleteTask = (id) => {
+                setTasks(tasks.filter(task => task.id !== id));
+                playSound('delete', soundEnabled);
+                showNotification('Task deleted');
+            };
+
+            const editTask = (id, newText) => {
+                setTasks(tasks.map(task =>
+                    task.id === id ? { ...task, text: newText } : task
+                ));
+                showNotification('Task updated');
+            };
+
+            const startVoiceInput = () => {
+                if (recognitionRef.current && !isListening) {
+                    setIsListening(true);
+                    recognitionRef.current.start();
+                }
+            };
+
+            const unlockAchievement = (achievementId) => {
+                if (!unlockedAchievements.includes(achievementId)) {
+                    setUnlockedAchievements([...unlockedAchievements, achievementId]);
+                    const achievement = achievements.find(a => a.id === achievementId);
+                    showNotification(`🎉 Achievement Unlocked: ${achievement.text}`);
+                    playSound('complete', soundEnabled);
+                }
+            };
+
+            const handleDragStart = (taskId) => {
+                setDraggedTask(taskId);
+            };
+
+            const handleDragEnd = () => {
+                setDraggedTask(null);
+            };
+
+            const handleDragOver = (e) => {
+                e.preventDefault();
+            };
+
+            const handleDrop = (e, targetIndex) => {
+                e.preventDefault();
+                if (draggedTask) {
+                    const draggedIndex = filteredTasks.findIndex(task => task.id === draggedTask);
+                    if (draggedIndex !== targetIndex) {
+                        const newTasks = [...tasks];
+                        const draggedTaskObj = newTasks.find(task => task.id === draggedTask);
+                        newTasks.splice(draggedIndex, 1);
+                        newTasks.splice(targetIndex, 0, draggedTaskObj);
+                        setTasks(newTasks);
+                    }
+                }
+            };
+
+            const filteredTasks = tasks.filter(task => {
+                const matchesFilter = filter === 'all' || 
+                    (filter === 'active' && !task.completed) ||
+                    (filter === 'completed' && task.completed);
+                
+                const matchesSearch = task.text.toLowerCase().includes(searchTerm.toLowerCase());
+                
+                return matchesFilter && matchesSearch;
+            });
+
+            const completedCount = tasks.filter(task => task.completed).length;
+            const activeCount = tasks.length - completedCount;
+            const overdueCount = tasks.filter(task => {
+                if (!task.dueDate) return false;
+                return new Date(task.dueDate) < new Date() && !task.completed;
+            }).length;
+
+            return (
+                <div className="app-container">
+                    <div className="main-panel">
+                        <div className="header">
+                            <button 
+                                className="sound-control"
+                                onClick={() => setSoundEnabled(!soundEnabled)}
+                                title={soundEnabled ? "Mute sounds" : "Enable sounds"}
+                            >
+                                <i className={`fas ${soundEnabled ? 'fa-volume-up' : 'fa-volume-mute'}`}></i>
+                            </button>
+                            <button 
+                                className="theme-toggle"
+                                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                                title="Toggle theme"
+                            >
+                                <i className={`fas ${theme === 'light' ? 'fa-moon' : 'fa-sun'}`}></i>
+                            </button>
+                            <h1>Ultimate To-Do</h1>
+                            <p>Organize, prioritize, and achieve your goals</p>
+                        </div>
+
+                        <div className="task-input-container">
+                            <div className="input-group">
+                                <input
+                                    type="text"
+                                    className="task-input"
+                                    placeholder="What needs to be done?"
+                                    value={inputValue}
+                                    onChange={(e) => setInputValue(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && addTask()}
+                                />
+                            </div>
+                            <div className="input-controls">
+                                <select 
+                                    className="priority-select" 
+                                    value={priority} 
+                                    onChange={(e) => setPriority(e.target.value)}
+                                >
+                                    <option value="low">Low Priority</option>
+                                    <option value="medium">Medium Priority</option>
+                                    <option value="high">High Priority</option>
+                                </select>
+                                
+                                <select 
+                                    className="category-select" 
+                                    value={category} 
+                                    onChange={(e) => setCategory(e.target.value)}
+                                >
+                                    <option value="personal">Personal</option>
+                                    <option value="work">Work</option>
+                                    <option value="health">Health</option>
+                                    <option value="shopping">Shopping</option>
+                                </select>
+                                
+                                <input
+                                    type="date"
+                                    className="due-date"
+                                    value={dueDate}
+                                    onChange={(e) => setDueDate(e.target.value)}
+                                />
+                                
+                                {recognitionRef.current && (
+                                    <button 
+                                        className={`voice-btn ${isListening ? 'listening' : ''}`}
+                                        onClick={startVoiceInput}
+                                        disabled={isListening}
+                                        title="Voice input"
+                                    >
+                                        <i className="fas fa-microphone"></i>
+                                        {isListening ? 'Listening...' : 'Voice'}
+                                    </button>
+                                )}
+                                
+                                <button 
+                                    className="add-btn" 
+                                    onClick={addTask}
+                                    disabled={!inputValue.trim()}
+                                >
+                                    <i className="fas fa-plus"></i> Add Task
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="filter-tabs">
+                            <button 
+                                className={`filter-tab ${filter === 'all' ? 'active' : ''}`}
+                                onClick={() => setFilter('all')}
+                            >
+                                All ({tasks.length})
+                            </button>
+                            <button 
+                                className={`filter-tab ${filter === 'active' ? 'active' : ''}`}
+                                onClick={() => setFilter('active')}
+                            >
+                                Active ({activeCount})
+                            </button>
+                            <button 
+                                className={`filter-tab ${filter === 'completed' ? 'active' : ''}`}
+                                onClick={() => setFilter('completed')}
+                            >
+                                Completed ({completedCount})
+                            </button>
+                        </div>
+
+                        <div className="tasks-container">
+                            <div className="search-bar">
+                                <input
+                                    type="text"
+                                    className="search-input"
+                                    placeholder="Search tasks..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                                <i className="fas fa-search search-icon"></i>
+                            </div>
+
+                            {tasks.length > 0 && (
+                                <div className="task-stats">
+                                    <div className="stat-card">
+                                        <div className="stat-number">{tasks.length}</div>
+                                        <div className="stat-label">Total Tasks</div>
+                                    </div>
+                                    <div className="stat-card">
+                                        <div className="stat-number">{completedCount}</div>
+                                        <div className="stat-label">Completed</div>
+                                    </div>
+                                    <div className="stat-card">
+                                        <div className="stat-number">{activeCount}</div>
+                                        <div className="stat-label">Active</div>
+                                    </div>
+                                    <div className="stat-card">
+                                        <div className="stat-number">{overdueCount}</div>
+                                        <div className="stat-label">Overdue</div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {filteredTasks.length > 0 ? (
+                                <ul className="task-list" onDragOver={handleDragOver}>
+                                    {filteredTasks.map((task, index) => (
+                                        <div
+                                            key={task.id}
+                                            onDrop={(e) => handleDrop(e, index)}
+                                            onDragOver={handleDragOver}
+                                        >
+                                            <TaskItem
+                                                task={task}
+                                                onToggle={toggleTask}
+                                                onDelete={deleteTask}
+                                                onEdit={editTask}
+                                                onDragStart={handleDragStart}
+                                                onDragEnd={handleDragEnd}
+                                            />
+                                        </div>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div className="empty-state">
+                                    <i className="fas fa-clipboard-list"></i>
+                                    <h3>
+                                        {filter === 'all' 
+                                            ? searchTerm ? 'No tasks found' : 'No tasks yet' 
+                                            : filter === 'active' 
+                                            ? 'No active tasks' 
+                                            : 'No completed tasks'
+                                        }
+                                    </h3>
+                                    <p>
+                                        {filter === 'all' 
+                                            ? searchTerm ? 'Try a different search term' : 'Add your first task above!' 
+                                            : filter === 'active' 
+                                            ? 'All tasks are completed!' 
+                                            : 'Complete some tasks to see them here!'
+                                        }
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="sidebar">
+                        <AchievementCard 
+                            tasks={tasks} 
+                            unlockedAchievements={unlockedAchievements}
+                            onUnlock={unlockAchievement}
+                        />
+                        <QuoteCard />
+                        <AnalyticsCard tasks={tasks} />
+                    </div>
+
+                    <button 
+                        className="floating-add"
+                        onClick={() => document.querySelector('.task-input').focus()}
+                        title="Quick add task"
+                    >
+                        <i className="fas fa-plus"></i>
+                    </button>
+
+                    <Notification 
+                        message={notification.message}
+                        show={notification.show}
+                        onHide={hideNotification}
+                    />
+                </div>
+            );
+        };
+
+        // Render the App
+        ReactDOM.render(<TodoApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
+
